@@ -21,7 +21,7 @@ public class ContaDAO {
 
     public void save(DadosAberturaConta dadosDaConta) {
         var cliente = new Cliente(dadosDaConta.dadosCliente());
-        var conta = new Conta(dadosDaConta.numero(), cliente);
+        var conta = new Conta(dadosDaConta.numero(), BigDecimal.ZERO, cliente);
 
         String sql = "INSERT INTO conta (numero, saldo, cliente_nome, cliente_cpf, cliente_email)" +
                 "VALUES (?, ?, ?, ?, ?)";
@@ -62,7 +62,7 @@ public class ContaDAO {
                 DadosCadastroCliente dadosCadastroCliente = new DadosCadastroCliente(nome, cpf, email);
                 Cliente cliente = new Cliente(dadosCadastroCliente);
 
-                contas.add(new Conta(numero, cliente));
+                contas.add(new Conta(numero, saldo, cliente));
 
             }
             resultSet.close();
@@ -91,13 +91,14 @@ public class ContaDAO {
             resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 Integer numeroObtido = resultSet.getInt(1);
+                BigDecimal saldo = resultSet.getBigDecimal(2);
                 String nome = resultSet.getString(3);
                 String cpf = resultSet.getString(4);
                 String email = resultSet.getString(5);
 
                 DadosCadastroCliente dadosCadastroCliente = new DadosCadastroCliente(nome, cpf, email);
                 Cliente cliente = new Cliente(dadosCadastroCliente);
-                conta = new Conta(numeroObtido, cliente);
+                conta = new Conta(numeroObtido, saldo, cliente);
             }
             resultSet.close();
             preparedStatement.close();
@@ -107,5 +108,34 @@ public class ContaDAO {
             throw new RuntimeException(e);
         }
         return conta;
+    }
+
+    public void update(Integer numero, BigDecimal valor) {
+        PreparedStatement preparedStatement;
+        String sql = "UPDATE conta SET saldo = ? WHERE numero = ?";
+
+        try {
+            conn.setAutoCommit(false);
+
+            preparedStatement = conn.prepareStatement(sql);
+
+            preparedStatement.setBigDecimal(1, valor);
+            preparedStatement.setInt(2, numero);
+
+            preparedStatement.execute();
+            conn.commit();
+
+            preparedStatement.close();
+            conn.close();
+        }
+        catch (SQLException e) {
+            try {
+                conn.rollback();
+            }
+            catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }
     }
 }

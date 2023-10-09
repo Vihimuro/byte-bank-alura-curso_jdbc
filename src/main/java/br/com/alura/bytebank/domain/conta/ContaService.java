@@ -43,7 +43,9 @@ public class ContaService {
             throw new RegraDeNegocioException("Saldo insuficiente!");
         }
 
-        conta.sacar(valor);
+        BigDecimal updatedValue = conta.getSaldo().subtract(valor);
+        Connection conn = connection.recoverConnection();
+        new ContaDAO(conn).update(conta.getNumero(), updatedValue);
     }
 
     public void realizarDeposito(Integer numeroDaConta, BigDecimal valor) {
@@ -52,7 +54,14 @@ public class ContaService {
             throw new RegraDeNegocioException("Valor do deposito deve ser superior a zero!");
         }
 
-        conta.depositar(valor);
+        BigDecimal updatedValue = conta.getSaldo().add(valor);
+        Connection conn = connection.recoverConnection();
+        new ContaDAO(conn).update(conta.getNumero(), updatedValue);
+    }
+
+    public void realizarTransferencia(Integer numeroDaContaOrigem, Integer numeroDaContaDestino, BigDecimal valor) {
+        this.realizarSaque(numeroDaContaOrigem, valor);
+        this.realizarDeposito(numeroDaContaDestino, valor);
     }
 
     public void encerrar(Integer numeroDaConta) {
@@ -68,7 +77,7 @@ public class ContaService {
         Connection conn = connection.recoverConnection();
         Conta conta = new ContaDAO(conn).findByAccount(numero);
         if(conta == null){
-            throw new RegraDeNegocioException("Não existe uma conta com esse numero!");
+            throw new RegraDeNegocioException("Não existe uma conta com esse número!");
         }
         else {
             return conta;
